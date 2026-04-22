@@ -1,47 +1,51 @@
-const user = localStorage.getItem("user");
-const room = "Our Spce";
+const SUPABASE_URL = "https://anprzuxycbmnikgnjcut.supabase.co";
+const SUPABASE_KEY = "sb_publishable_c8CLCw8ss_7kDAJfkCFjhg_v9Hk78ZE";
 
-const chatBox = document.getElementById("chat-box");
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-load();
-
-function send() {
+// SEND MESSAGE
+async function send() {
   const input = document.getElementById("msg");
   if (!input.value) return;
 
-  let messages = JSON.parse(localStorage.getItem(room)) || [];
-
-  messages.push({
-    user,
-    msg: input.value,
-    time: new Date().toLocaleTimeString()
-  });
-
-  localStorage.setItem(room, JSON.stringify(messages));
+  await supabaseClient
+    .from("messages")
+    .insert([{
+      user_name: localStorage.getItem("user"),
+      message: input.value
+    }]);
 
   input.value = "";
-  render();
 }
 
-function load() {
-  render();
+// LOAD + REALTIME
+function loadMessages() {
+  supabaseClient
+    .from("messages")
+    .select("*")
+    .order("created_at", { ascending: true })
+    .then(({ data }) => render(data));
+
+  supabaseClient
+    .channel("room")
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "messages" },
+      payload => {
+        loadMessages();
+      }
+    )
+    .subscribe();
 }
 
-function render() {
+function render(messages) {
+  const chatBox = document.getElementById("chat-box");
   chatBox.innerHTML = "";
-
-  let messages = JSON.parse(localStorage.getItem(room)) || [];
 
   messages.forEach(m => {
     const div = document.createElement("div");
-    div.className = m.user === user ? "msg me" : "msg you";
-
-    div.innerHTML = `
-      <b>${m.user}</b><br>
-      ${m.msg}<br>
-      <small>${m.time}</small>
-    `;
-
+    div.className = m.user_name === localStorage.getItem("user") ? "msg me" : "msg you";
+    div.innerHTML = `<b>${m.user_name}</b><br>${m.message}`;
     chatBox.appendChild(div);
   });
 
