@@ -5,53 +5,80 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const myName = localStorage.getItem("chat_name");
 
-// Send
+// Format time
+function formatTime(ts) {
+  const d = new Date(ts);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+// Append message (IMPORTANT)
+function addMessage(msg) {
+  const chat = document.getElementById("chat");
+
+  const type = msg.sender === myName ? "sent" : "received";
+
+  const div = document.createElement("div");
+  div.className = `msg ${type}`;
+  div.innerHTML = `
+    ${msg.content}
+    <div class="time">${formatTime(msg.created_at)}</div>
+  `;
+
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// Load messages once
+async function loadMessages() {
+  const { data, error } = await supabaseClient
+    .from("messages")
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const chat = document.getElementById("chat");
+  chat.innerHTML = "";
+
+  data.forEach(msg => addMessage(msg));
+}
+
+// Send message
 async function sendMessage() {
-  const text = document.getElementById("message").value;
+  const input = document.getElementById("message");
+  const text = input.value.trim();
+
   if (!text) return;
 
-  await supabaseClient.from("messages").insert([
+  const { error } = await supabaseClient.from("messages").insert([
     {
       sender: myName,
       content: text
     }
   ]);
 
-  document.getElementById("message").value = "";
+  if (error) {
+    console.error(error);
+    alert("Message failed");
+  }
+
+  input.value = "";
 }
 
-// Load
-async function loadMessages() {
-  const { data } = await supabaseClient
-    .from("messages")
-    .select("*")
-    .order("created_at", { ascending: true });
-
-  const chat = document.getElementById("chat");
-  chat.innerHTML = "";
-
-  data.forEach(msg => {
-    const type = msg.sender === myName ? "sent" : "received";
-
-    chat.innerHTML += `
-      <div class="msg ${type}">
-        <b>${msg.sender}</b><br>
-        ${msg.content}
-      </div>
-    `;
-  });
-
-  chat.scrollTop = chat.scrollHeight;
-}
-
-// Realtime
+// Realtime (IMPORTANT FIX)
 supabaseClient
   .channel("room")
   .on(
     "postgres_changes",
     { event: "INSERT", schema: "public", table: "messages" },
-    () => loadMessages()
+    payload => {
+      addMessage(payload.new);
+    }
   )
   .subscribe();
 
+// Initial load
 loadMessages();
