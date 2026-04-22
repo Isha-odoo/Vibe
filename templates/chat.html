@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Couple Chat 💕</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="chat-container">
+
+  <div class="header">
+    💞 Safe Couple Space
+  </div>
+
+  <div class="note">
+    Tell me — what are you thinking? how was your day?
+  </div>
+
+  <div class="chat-box">
+    {% for user, msg in messages %}
+      <div class="msg {% if user == session['user'] %}me{% else %}you{% endif %}">
+        <b>{{user}}</b><br>
+        {{msg}}
+      </div>
+    {% endfor %}
+  </div>
+
+  <form method="POST" class="input-box">
+    <input name="message" placeholder="Share your thoughts...">
+    <button type="submit">Send</button>
+  </form>
+
+</div>
+
+</body>
+</html>
