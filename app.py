@@ -1,66 +1,61 @@
-from flask import Flask, render_template, request, redirect, session
-import sqlite3
+import gradio as gr
 
-app = Flask(__name__)
-app.secret_key = "couple_secret_key"
+PASSWORD = "ourlove"
 
-PASSWORD = "Isha"   # shared password
+messages = []
 
-# ---------------- DB ----------------
-def init_db():
-    conn = sqlite3.connect("chat.db")
-    c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user TEXT,
-            message TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
+def login(name, password):
+    if password != PASSWORD:
+        return "❌ Wrong password", gr.update(visible=False), gr.update(visible=True)
 
-init_db()
-
-# ---------------- ROUTES ----------------
-
-@app.route("/", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        name = request.form["name"]
-        password = request.form["password"]
-
-        if password != PASSWORD:
-            return "Wrong password 💔"
-
-        session["user"] = name
-        return redirect("/chat")
-
-    return render_template("login.html")
+    return f"💖 Welcome {name}", gr.update(visible=True), gr.update(visible=False)
 
 
-@app.route("/chat", methods=["GET", "POST"])
-def chat():
-    if "user" not in session:
-        return redirect("/")
+def send_message(user, msg):
+    if not msg:
+        return messages
 
-    conn = sqlite3.connect("chat.db")
-    c = conn.cursor()
+    messages.append(f"{user}: {msg}")
 
-    if request.method == "POST":
-        msg = request.form["message"]
-        c.execute("INSERT INTO messages (user, message) VALUES (?, ?)",
-                  (session["user"], msg))
-        conn.commit()
-
-    c.execute("SELECT user, message FROM messages")
-    messages = c.fetchall()
-    conn.close()
-
-    return render_template("chat.html",
-                           user=session["user"],
-                           messages=messages)
+    return "\n".join(messages)
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+with gr.Blocks() as app:
+
+    gr.Markdown("# 💕 Private Couple Space")
+    gr.Markdown("A safe place — just two people, just feelings.")
+
+    # LOGIN
+    with gr.Column(visible=True) as login_box:
+        name = gr.Textbox(label="Your Name")
+        password = gr.Textbox(label="Password", type="password")
+        login_btn = gr.Button("Enter 💕")
+        login_status = gr.Textbox(label="Status")
+
+    # CHAT
+    with gr.Column(visible=False) as chat_box:
+        chat_display = gr.Textbox(label="Couple Chat", lines=10)
+        msg = gr.Textbox(label="Write your thoughts...")
+        send_btn = gr.Button("Send 💌")
+
+        user_state = gr.State()
+
+    # LOGIN ACTION
+    def handle_login(n, p):
+        status, show_chat, hide_login = login(n, p)
+        return status, show_chat, hide_login, n
+
+    login_btn.click(
+        handle_login,
+        inputs=[name, password],
+        outputs=[login_status, chat_box, login_box, user_state]
+    )
+
+    # SEND MESSAGE
+    send_btn.click(
+        send_message,
+        inputs=[user_state, msg],
+        outputs=chat_display
+    )
+
+app.launch()
