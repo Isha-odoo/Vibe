@@ -1,24 +1,22 @@
-const SUPABASE_URL = "https://styskdmjtfbbbrjjkfxe.supabase.co";
-const SUPABASE_KEY = "sb_publishable_1IvvlwE_CVoFzV8R6LkSnA_nATdDE7l";
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Couple Space 💕</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="center">
 
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<div class="card">
+  <h2>💖 Your Private Space</h2>
+  <p>No arguments. No pressure.<br>Just share what you feel.</p>
 
-async function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  const name = document.getElementById("name").value;
+  <input id="name" placeholder="Your name">
+  <input id="room" placeholder="Room code (e.g. love123)">
+  <input id="password" type="password" placeholder="Password">
 
-  const { error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password
-  });
+  <button onclick="login()">Enter Space</button>
+</div>
 
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  localStorage.setItem("chat_name", name);
-
-  window.location.href = "chat.html";
-}
+<script src="login.js"></script>
+</body>
+</html>
