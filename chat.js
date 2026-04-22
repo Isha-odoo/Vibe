@@ -5,13 +5,22 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const myName = localStorage.getItem("chat_name");
 
+// 🔥 MUST CHECK LOGIN
+supabaseClient.auth.getSession().then(({ data }) => {
+  if (!data.session) {
+    window.location.href = "login.html";
+  }
+});
+
 // Format time
 function formatTime(ts) {
-  const d = new Date(ts);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return new Date(ts).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
-// Append message (IMPORTANT)
+// Add message to UI
 function addMessage(msg) {
   const chat = document.getElementById("chat");
 
@@ -19,6 +28,7 @@ function addMessage(msg) {
 
   const div = document.createElement("div");
   div.className = `msg ${type}`;
+
   div.innerHTML = `
     ${msg.content}
     <div class="time">${formatTime(msg.created_at)}</div>
@@ -28,7 +38,7 @@ function addMessage(msg) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-// Load messages once
+// Load messages
 async function loadMessages() {
   const { data, error } = await supabaseClient
     .from("messages")
@@ -43,7 +53,7 @@ async function loadMessages() {
   const chat = document.getElementById("chat");
   chat.innerHTML = "";
 
-  data.forEach(msg => addMessage(msg));
+  data.forEach(addMessage);
 }
 
 // Send message
@@ -62,23 +72,26 @@ async function sendMessage() {
 
   if (error) {
     console.error(error);
-    alert("Message failed");
   }
 
   input.value = "";
 }
 
-// Realtime (IMPORTANT FIX)
+// Realtime FIX (MOST IMPORTANT)
 supabaseClient
-  .channel("room")
+  .channel("chat-room")
   .on(
     "postgres_changes",
-    { event: "INSERT", schema: "public", table: "messages" },
-    payload => {
+    {
+      event: "INSERT",
+      schema: "public",
+      table: "messages"
+    },
+    (payload) => {
       addMessage(payload.new);
     }
   )
   .subscribe();
 
-// Initial load
+// INIT
 loadMessages();
