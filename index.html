@@ -1,23 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Chat App</title>
+  <title>Login</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 
 <body>
 
-<h2>Chat App</h2>
+<h2>Login / Signup</h2>
 
-<div id="chat"></div>
+<input id="email" placeholder="Email"><br><br>
+<input id="password" type="password" placeholder="Password"><br><br>
 
-<div class="inputBox">
-  <input id="message" placeholder="Type message..." />
-  <button id="sendBtn">Send</button>
-</div>
+<button onclick="signup()">Signup</button>
+<button onclick="login()">Login</button>
 
-<script src="app.js"></script>
+<script src="auth.js"></script>
 
 </body>
 </html>
