@@ -1,22 +1,22 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Couple Space 💕</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body class="center">
+function login() {
+  const name = document.getElementById("name").value;
+  const password = document.getElementById("password").value;
 
-<div class="card">
-  <h2>💖 Your Private Space</h2>
-  <p>No arguments. No pressure.<br>Just share what you feel.</p>
+  if (!name || !password) {
+    alert("Please fill all fields");
+    return;
+  }
 
-  <input id="name" placeholder="Your name">
-  <input id="room" placeholder="Room code (e.g. love123)">
-  <input id="password" type="password" placeholder="Password">
+  // SINGLE SHARED PASSWORD FOR BOTH PEOPLE
+  const SECRET_PASSWORD = "ourlove";
 
-  <button onclick="login()">Enter Space</button>
-</div>
+  if (password !== SECRET_PASSWORD) {
+    alert("Wrong password 💔");
+    return;
+  }
 
-<script src="login.js"></script>
-</body>
-</html>
+  localStorage.setItem("user", name);
+  localStorage.setItem("room", "couple-room");
+
+  window.location.href = "chat.html";
+}
