@@ -1,32 +1,49 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Safe Space 💕</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
+const user = localStorage.getItem("user");
+const room = "Our Spce";
 
-<div class="chat-container">
+const chatBox = document.getElementById("chat-box");
 
-  <div class="header">
-    💞 We are together
-  </div>
+load();
 
-  <div class="note">
-    No arguments. No judgment.<br>
-    Just tell me — what are you thinking? how was your day?
-  </div>
+function send() {
+  const input = document.getElementById("msg");
+  if (!input.value) return;
 
-  <div id="chat-box" class="chat-box"></div>
+  let messages = JSON.parse(localStorage.getItem(room)) || [];
 
-  <div class="input-box">
-    <input id="msg" placeholder="Share your thoughts...">
-    <button onclick="send()">Send</button>
-  </div>
+  messages.push({
+    user,
+    msg: input.value,
+    time: new Date().toLocaleTimeString()
+  });
 
-</div>
+  localStorage.setItem(room, JSON.stringify(messages));
 
-<script src="auth.js"></script>
-<script src="chat.js"></script>
-</body>
-</html>
+  input.value = "";
+  render();
+}
+
+function load() {
+  render();
+}
+
+function render() {
+  chatBox.innerHTML = "";
+
+  let messages = JSON.parse(localStorage.getItem(room)) || [];
+
+  messages.forEach(m => {
+    const div = document.createElement("div");
+    div.className = m.user === user ? "msg me" : "msg you";
+
+    div.innerHTML = `
+      <b>${m.user}</b><br>
+      ${m.msg}<br>
+      <small>${m.time}</small>
+    `;
+
+    chatBox.appendChild(div);
+  });
+
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
