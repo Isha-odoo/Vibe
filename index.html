@@ -1,44 +1,97 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>OurChat</title>
+  <title>Couple Chat 💞</title>
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    body { font-family: Arial; background:#f3f4f6; }
-    .box { max-width:400px; margin:50px auto; background:white; padding:20px; border-radius:10px; }
-    input, button { width:100%; padding:10px; margin:8px 0; }
-    button { background:#333; color:white; border:none; cursor:pointer; }
-    #chat { display:none; }
+    body {
+      font-family: Arial;
+      background: #f3f4f6;
+    }
+
+    .box {
+      max-width: 420px;
+      margin: 40px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+
+    button {
+      background: #4b5563;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    #chat {
+      display: none;
+    }
+
+    .msg {
+      padding: 8px;
+      margin: 5px 0;
+      border-radius: 10px;
+      max-width: 70%;
+    }
+
+    .me {
+      background: #e5e7eb;
+      margin-left: auto;
+    }
+
+    .other {
+      background: #ffffff;
+    }
   </style>
 </head>
 
 <body>
 
 <div class="box" id="loginBox">
-  <h3>Login</h3>
+  <h3>💬 Private Chat</h3>
+
   <input id="name" placeholder="Your name">
   <input id="pass" type="password" placeholder="Password">
+
   <button id="loginBtn">Enter</button>
+
   <p id="error" style="color:red;"></p>
 </div>
 
 <div class="box" id="chat">
-  <h3>Chat Room</h3>
+  <h3>💞 Chat Room</h3>
+
   <div id="messages"></div>
-  <input id="msg" placeholder="Message">
+
+  <input id="msg" placeholder="Type message...">
   <button id="sendBtn">Send</button>
 </div>
 
 <script>
+const SUPABASE_URL = "https://styskdmjtfbbbrjjkfxe.supabase.co";
+const SUPABASE_KEY = "sb_publishable_1IvvlwE_CVoFzV8R6LkSnA_nATdDE7l";
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 const PASSWORD = "loveyou";
+const COUPLE_ID = "Yours";
+
 let currentUser = "";
 
-// ✅ attach event AFTER page loads
-document.getElementById("loginBtn").addEventListener("click", function() {
-  console.log("CLICK WORKING");
+// LOGIN
+document.getElementById("loginBtn").addEventListener("click", async function () {
 
   const name = document.getElementById("name").value;
   const pass = document.getElementById("pass").value;
@@ -57,12 +110,63 @@ document.getElementById("loginBtn").addEventListener("click", function() {
 
   document.getElementById("loginBox").style.display = "none";
   document.getElementById("chat").style.display = "block";
+
+  loadMessages();
+  listenRealtime();
 });
 
-// SEND BUTTON TEST
-document.getElementById("sendBtn").addEventListener("click", function() {
-  alert("Send clicked ✅");
+// LOAD MESSAGES
+async function loadMessages() {
+  const { data } = await supabase
+    .from("messages")
+    .select("*")
+    .eq("couple_id", COUPLE_ID)
+    .order("created_at");
+
+  document.getElementById("messages").innerHTML = "";
+
+  data.forEach(addMessage);
+}
+
+// ADD MESSAGE UI
+function addMessage(m) {
+  const div = document.createElement("div");
+
+  const isMe = m.sender === currentUser;
+  div.className = "msg " + (isMe ? "me" : "other");
+
+  div.innerHTML = `<b>${m.sender}</b><br>${m.message}`;
+
+  document.getElementById("messages").appendChild(div);
+}
+
+// SEND MESSAGE
+document.getElementById("sendBtn").addEventListener("click", async function () {
+  const msg = document.getElementById("msg").value;
+
+  if (!msg) return;
+
+  await supabase.from("messages").insert({
+    couple_id: COUPLE_ID,
+    sender: currentUser,
+    message: msg
+  });
+
+  document.getElementById("msg").value = "";
 });
+
+// REALTIME
+function listenRealtime() {
+  supabase.channel("chat")
+    .on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "messages"
+    }, payload => {
+      addMessage(payload.new);
+    })
+    .subscribe();
+}
 </script>
 
 </body>
