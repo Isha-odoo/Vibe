@@ -1,61 +1,213 @@
-import gradio as gr
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Let's Talk 💞</title>
 
-PASSWORD = "ourlove"
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-messages = []
+  <style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
 
-def login(name, password):
-    if password != PASSWORD:
-        return "❌ Wrong password", gr.update(visible=False), gr.update(visible=True)
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #eef2f3, #f9fafb);
+}
 
-    return f"💖 Welcome {name}", gr.update(visible=True), gr.update(visible=False)
+.container {
+  max-width: 520px;
+  margin: auto;
+  padding: 20px;
+}
 
+.card {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(12px);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+}
 
-def send_message(user, msg):
-    if not msg:
-        return messages
+input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
 
-    messages.append(f"{user}: {msg}")
+button {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #6b7280, #374151);
+  color: white;
+  border: none;
+  border-radius: 12px;
+}
 
-    return "\n".join(messages)
+.chat {
+  height: 420px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
+.msg {
+  padding: 12px;
+  border-radius: 16px;
+  max-width: 75%;
+}
 
-with gr.Blocks() as app:
+.me {
+  background: #e5e7eb;
+  align-self: flex-end;
+}
 
-    gr.Markdown("# 💕 Private Couple Space")
-    gr.Markdown("A safe place — just two people, just feelings.")
+.other {
+  background: white;
+  align-self: flex-start;
+}
 
-    # LOGIN
-    with gr.Column(visible=True) as login_box:
-        name = gr.Textbox(label="Your Name")
-        password = gr.Textbox(label="Password", type="password")
-        login_btn = gr.Button("Enter 💕")
-        login_status = gr.Textbox(label="Status")
+.time {
+  font-size: 10px;
+  opacity: 0.6;
+  text-align: right;
+}
 
-    # CHAT
-    with gr.Column(visible=False) as chat_box:
-        chat_display = gr.Textbox(label="Couple Chat", lines=10)
-        msg = gr.Textbox(label="Write your thoughts...")
-        send_btn = gr.Button("Send 💌")
+.header {
+  text-align: center;
+}
+  </style>
+</head>
 
-        user_state = gr.State()
+<body>
 
-    # LOGIN ACTION
-    def handle_login(n, p):
-        status, show_chat, hide_login = login(n, p)
-        return status, show_chat, hide_login, n
+<div class="container">
 
-    login_btn.click(
-        handle_login,
-        inputs=[name, password],
-        outputs=[login_status, chat_box, login_box, user_state]
-    )
+  <!-- LOGIN -->
+  <div id="login" class="card">
+    <h2>💬 Private Space</h2>
+    <input id="name" placeholder="Your name">
+    <input id="pass" placeholder="Password" type="password">
+    <button onclick="login()">Enter</button>
+    <p id="error" style="color:red;"></p>
+  </div>
 
-    # SEND MESSAGE
-    send_btn.click(
-        send_message,
-        inputs=[user_state, msg],
-        outputs=chat_display
-    )
+  <!-- CHAT -->
+  <div id="chatUI" class="card" style="display:none;">
+    
+    <div class="header">
+      <h2>💞 Our Space</h2>
+      <p>Talk gently. You’re on the same team.</p>
+    </div>
 
-app.launch()
+    <div id="chat" class="chat"></div>
+
+    <input id="msg" placeholder="Type something kind..." />
+    <button onclick="send()">Send</button>
+
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = "https://styskdmjtfbbbrjjkfxe.supabase.co";
+const SUPABASE_KEY = "sb_publishable_1IvvlwE_CVoFzV8R6LkSnA_nATdDE7l";
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const PASSWORD = "loveyou";
+const COUPLE_ID = "Yours";
+
+let currentUser = "";
+
+// LOGIN
+function login() {
+  const name = document.getElementById("name").value;
+  const pass = document.getElementById("pass").value;
+
+  if (!name) {
+    document.getElementById("error").innerText = "Enter name";
+    return;
+  }
+
+  if (pass !== PASSWORD) {
+    document.getElementById("error").innerText = "Wrong password";
+    return;
+  }
+
+  currentUser = name;
+
+  document.getElementById("login").style.display = "none";
+  document.getElementById("chatUI").style.display = "block";
+
+  loadMessages();
+  listenRealtime();
+}
+
+// LOAD OLD MESSAGES
+async function loadMessages() {
+  const { data } = await supabase
+    .from("messages")
+    .select("*")
+    .eq("couple_id", COUPLE_ID)
+    .order("created_at");
+
+  document.getElementById("chat").innerHTML = "";
+  data.forEach(addMessage);
+}
+
+// ADD MESSAGE UI
+function addMessage(m) {
+  const div = document.createElement("div");
+  const isMe = m.sender === currentUser;
+
+  div.className = "msg " + (isMe ? "me" : "other");
+
+  const time = new Date(m.created_at).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  div.innerHTML = `
+    <b>${m.sender}</b><br>
+    ${m.message}
+    <div class="time">${time}</div>
+  `;
+
+  document.getElementById("chat").appendChild(div);
+  div.scrollIntoView({ behavior: "smooth" });
+}
+
+// SEND MESSAGE
+async function send() {
+  const msg = document.getElementById("msg").value;
+
+  if (!msg) return;
+
+  await supabase.from("messages").insert({
+    couple_id: COUPLE_ID,
+    sender: currentUser,
+    message: msg
+  });
+
+  document.getElementById("msg").value = "";
+}
+
+// REALTIME
+function listenRealtime() {
+  supabase.channel("chat")
+    .on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "messages"
+    }, payload => {
+      addMessage(payload.new);
+    })
+    .subscribe();
+}
+</script>
+
+</body>
+</html>
