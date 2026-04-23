@@ -1,83 +1,83 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Let's Talk 💞</title>
+  <title>Our Chat 💞</title>
 
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #f3f4f6;
+    }
 
-body {
-  margin: 0;
-  font-family: 'Poppins', sans-serif;
-  background: linear-gradient(135deg, #eef2f3, #f9fafb);
-}
+    .container {
+      max-width: 520px;
+      margin: auto;
+      padding: 20px;
+    }
 
-.container {
-  max-width: 520px;
-  margin: auto;
-  padding: 20px;
-}
+    .card {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
 
-.card {
-  background: rgba(255,255,255,0.7);
-  backdrop-filter: blur(12px);
-  border-radius: 18px;
-  padding: 20px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
-}
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+    }
 
-input {
-  width: 100%;
-  padding: 12px;
-  margin: 10px 0;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-}
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #4b5563;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
 
-button {
-  width: 100%;
-  padding: 12px;
-  background: linear-gradient(135deg, #6b7280, #374151);
-  color: white;
-  border: none;
-  border-radius: 12px;
-}
+    .chat {
+      height: 400px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
 
-.chat {
-  height: 420px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+    .msg {
+      padding: 10px;
+      border-radius: 12px;
+      max-width: 70%;
+    }
 
-.msg {
-  padding: 12px;
-  border-radius: 16px;
-  max-width: 75%;
-}
+    .me {
+      background: #e5e7eb;
+      align-self: flex-end;
+    }
 
-.me {
-  background: #e5e7eb;
-  align-self: flex-end;
-}
+    .other {
+      background: #ffffff;
+      align-self: flex-start;
+    }
 
-.other {
-  background: white;
-  align-self: flex-start;
-}
+    .time {
+      font-size: 10px;
+      opacity: 0.6;
+      text-align: right;
+    }
 
-.time {
-  font-size: 10px;
-  opacity: 0.6;
-  text-align: right;
-}
-
-.header {
-  text-align: center;
-}
+    #error {
+      color: red;
+    }
   </style>
 </head>
 
@@ -87,26 +87,24 @@ button {
 
   <!-- LOGIN -->
   <div id="login" class="card">
-    <h2>💬 Private Space</h2>
+    <h2>💬Let's Talk</h2>
+
     <input id="name" placeholder="Your name">
-    <input id="pass" placeholder="Password" type="password">
-    <button onclick="login()">Enter</button>
-    <p id="error" style="color:red;"></p>
+    <input id="pass" type="password" placeholder="Password">
+
+    <button type="button" onclick="login()">Enter</button>
+
+    <p id="error"></p>
   </div>
 
   <!-- CHAT -->
   <div id="chatUI" class="card" style="display:none;">
-    
-    <div class="header">
-      <h2>💞 Our Space</h2>
-      <p>Talk gently. You’re on the same team.</p>
-    </div>
+    <h3>💞 Your Space</h3>
 
     <div id="chat" class="chat"></div>
 
-    <input id="msg" placeholder="Type something kind..." />
-    <button onclick="send()">Send</button>
-
+    <input id="msg" placeholder="Type message..." />
+    <button type="button" onclick="send()">Send</button>
   </div>
 
 </div>
@@ -132,7 +130,7 @@ function login() {
     return;
   }
 
-  if (pass !== PASSWORD) {
+  if (pass.trim().toLowerCase() !== PASSWORD) {
     document.getElementById("error").innerText = "Wrong password";
     return;
   }
@@ -146,28 +144,33 @@ function login() {
   listenRealtime();
 }
 
-// LOAD OLD MESSAGES
+// LOAD MESSAGES
 async function loadMessages() {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("messages")
     .select("*")
     .eq("couple_id", COUPLE_ID)
     .order("created_at");
 
+  if (error) {
+    console.error(error);
+    return;
+  }
+
   document.getElementById("chat").innerHTML = "";
   data.forEach(addMessage);
 }
 
-// ADD MESSAGE UI
+// ADD MESSAGE
 function addMessage(m) {
   const div = document.createElement("div");
-  const isMe = m.sender === currentUser;
 
+  const isMe = m.sender === currentUser;
   div.className = "msg " + (isMe ? "me" : "other");
 
   const time = new Date(m.created_at).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit'
+    hour: "2-digit",
+    minute: "2-digit"
   });
 
   div.innerHTML = `
@@ -177,7 +180,7 @@ function addMessage(m) {
   `;
 
   document.getElementById("chat").appendChild(div);
-  div.scrollIntoView({ behavior: "smooth" });
+  div.scrollIntoView();
 }
 
 // SEND MESSAGE
@@ -186,16 +189,20 @@ async function send() {
 
   if (!msg) return;
 
-  await supabase.from("messages").insert({
+  const { error } = await supabase.from("messages").insert({
     couple_id: COUPLE_ID,
     sender: currentUser,
     message: msg
   });
 
+  if (error) {
+    console.error(error);
+  }
+
   document.getElementById("msg").value = "";
 }
 
-// REALTIME
+// REALTIME LISTENER
 function listenRealtime() {
   supabase.channel("chat")
     .on("postgres_changes", {
